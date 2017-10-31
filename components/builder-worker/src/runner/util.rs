@@ -196,17 +196,9 @@ pub fn docker_exporter_spec(workspace: &Workspace) -> DockerExporterSpec {
             .expect("Project integrations must not be empty")
             .get_body(),
     ).expect("Project integrations body must be JSON");
-    let custom_tag = match opts.get("custom_tag") {
-        Some(val) => {
-            let val = val.as_str().expect("custom_tag value is a string");
-            if val.is_empty() {
-                None
-            } else {
-                Some(val.to_string())
-            }
-        }
-        None => None,
-    };
+    let custom_tag = get_optional_args(&opts, String::from("custom_tag"));
+    let registry_url = get_optional_args(&creds, String::from("registry_url"));
+    let registry_type = get_optional_args(&opts, String::from("integration"));
 
     DockerExporterSpec {
         username: creds
@@ -221,6 +213,8 @@ pub fn docker_exporter_spec(workspace: &Workspace) -> DockerExporterSpec {
             .as_str()
             .expect("password value is a string")
             .to_string(),
+        registry_type: registry_type,
+        registry_url: registry_url,
         docker_hub_repo_name: opts.get("docker_hub_repo_name")
             .expect("docker_hub_repo_name key is present")
             .as_str()
@@ -239,5 +233,20 @@ pub fn docker_exporter_spec(workspace: &Workspace) -> DockerExporterSpec {
             .as_bool()
             .expect("version_release_tag value is a bool"),
         custom_tag: custom_tag,
+    }
+}
+
+fn get_optional_args(opts: &JsonValue, arg: String) -> Option<String> {
+    let is_string = format!("{} value is a string", arg);
+    match opts.get(arg) {
+        Some(key) => {
+            let key = key.as_str().expect(&is_string);
+            if key.is_empty() {
+                None
+            } else {
+                Some(key.to_string())
+            }
+        }
+        None => None,
     }
 }
